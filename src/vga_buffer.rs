@@ -49,8 +49,8 @@ struct ScreenChar {
     color_code: ColorCode,
 }
 
-const BUFFER_HEIGHT: usize = 25;
-const BUFFER_WIDTH: usize = 80;
+pub const BUFFER_HEIGHT: usize = 25;
+pub const BUFFER_WIDTH: usize = 80;
 
 use volatile::Volatile;
 #[repr(transparent)]
@@ -140,7 +140,7 @@ impl fmt::Write for Writer {
 //     };
 
 //     writer.write_byte(b'H');
-//     writer.write_string("ello! ");
+//     writer.write_string("hello! ");
 //     write!(writer, "The numbers are {} and {}", 42, 1.0/3.0).unwrap();
 // }
 //DEBUG END
