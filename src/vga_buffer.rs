@@ -1,15 +1,6 @@
 use spin::Mutex;
 use lazy_static::lazy_static;
 
-lazy_static! {
-    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
-        column_position: 0,
-        color_code: ColorCode::new(Color::LightGreen, Color::Black),
-        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-    });
-}
-
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -30,6 +21,16 @@ pub enum Color {
     Pink = 13,
     Yellow = 14,
     White = 15,
+}
+
+const DEFAULT_COLOR_CODE: ColorCode = ColorCode((Color::Black as u8) << 4 | (Color::LightGreen as u8));
+
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
+        column_position: 0,
+        color_code: DEFAULT_COLOR_CODE,
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+    });
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -121,7 +122,17 @@ impl Writer {
     }
 }
 
-use core::fmt;
+impl Writer {
+    fn change_color(&mut self, color_code: ColorCode) {
+        self.color_code = color_code;
+    }
+
+    fn change_to_default_color(&mut self){
+        self.change_color(DEFAULT_COLOR_CODE);
+    }
+}
+
+use core::fmt::{self, Arguments};
 
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -156,8 +167,77 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
+const KERNEL_COLOR: ColorCode = ColorCode((Color::Black as u8) << 4 | (Color::Magenta as u8));
+const INFO_COLOR: ColorCode = ColorCode((Color::Black as u8) << 4 | (Color::LightCyan as u8));
+const WARN_COLOR: ColorCode = ColorCode((Color::Black as u8) << 4 | (Color::Yellow as u8));
+const ERROR_COLOR: ColorCode = ColorCode((Color::Black as u8) << 4 | (Color::LightRed as u8));
+
+#[macro_export]
+macro_rules! kernel {
+    ($($arg:tt)*) => ($crate::vga_buffer::_kernel(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => ($crate::vga_buffer::_info(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! warn {
+    ($($arg:tt)*) => ($crate::vga_buffer::_warn(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! error {
+    ($($arg:tt)*) => ($crate::vga_buffer::_error(format_args!($($arg)*)));
+}
+
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
+}
+
+#[doc(hidden)]
+pub fn _kernel(args: fmt::Arguments) {
+    use core::fmt::Write;
+    let ref mut w = WRITER.lock();
+    w.change_color(KERNEL_COLOR);
+    w.write_str("[KERNEL] ").unwrap();
+    w.write_fmt(args).unwrap();
+    w.change_to_default_color();
+    w.new_line();
+}
+
+#[doc(hidden)]
+pub fn _info(args: fmt::Arguments) {
+    use core::fmt::Write;
+    let ref mut w = WRITER.lock();
+    w.change_color(INFO_COLOR);
+    w.write_str("[INFO] ").unwrap();
+    w.write_fmt(args).unwrap();
+    w.change_to_default_color();
+    w.new_line();
+}
+
+#[doc(hidden)]
+pub fn _warn(args: fmt::Arguments) {
+    use core::fmt::Write;
+    let ref mut w = WRITER.lock();
+    w.change_color(WARN_COLOR);
+    w.write_str("[WARN] ").unwrap();
+    w.write_fmt(args).unwrap();
+    w.change_to_default_color();
+    w.new_line();
+}
+
+#[doc(hidden)]
+pub fn _error(args: fmt::Arguments) {
+    use core::fmt::Write;
+    let ref mut w = WRITER.lock();
+    w.change_color(ERROR_COLOR);
+    w.write_str("[ERROR] ").unwrap();
+    w.write_fmt(args).unwrap();
+    w.change_to_default_color();
+    w.new_line();
 }
