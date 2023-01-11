@@ -1,6 +1,9 @@
 use core::panic::PanicInfo;
+#[cfg(test)]
 use crate::serial_print;
+#[cfg(test)]
 use crate::serial_println;
+#[cfg(test)]
 use crate::exit;
 #[cfg(not(test))]
 #[panic_handler]
