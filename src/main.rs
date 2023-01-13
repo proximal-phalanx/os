@@ -11,16 +11,23 @@ mod lang_item;
 mod vga_buffer;
 mod exit;
 mod interrupts;
+mod gdt;
 #[cfg(test)]
 mod test;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     warn!("Interrupt test.");
-    init_idt();
-    x86_64::instructions::interrupts::int3();
+    interrupts::init_idt();
+    gdt::init();
+
+    fn stack_overflow(){
+        stack_overflow();
+    }
+
+    stack_overflow();
+
     #[cfg(test)]
     test_main();
-    info!("Interruption handled.");
     loop {}
 }

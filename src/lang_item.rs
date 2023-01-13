@@ -8,8 +8,8 @@ use crate::exit;
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    use crate::println;
-    println!("{}", info);
+    use crate::error;
+    error!("{}", info);
     loop {}
 }
 #[panic_handler]
