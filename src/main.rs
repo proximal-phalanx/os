@@ -5,6 +5,8 @@
 #![feature(abi_x86_interrupt)]
 #![reexport_test_harness_main = "test_main"]
 
+use x86_64::instructions::hlt;
+
 use crate::interrupts::init_idt;
 mod serial;
 mod lang_item;
@@ -17,17 +19,17 @@ mod test;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    warn!("Interrupt test.");
     interrupts::init_idt();
     gdt::init();
-
-    fn stack_overflow(){
-        stack_overflow();
-    }
-
-    stack_overflow();
-
+    unsafe { interrupts::PICS.lock().initialize() }; 
+    x86_64::instructions::interrupts::enable();
     #[cfg(test)]
     test_main();
-    loop {}
+    hlt_loop()
+}
+
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
+    }
 }

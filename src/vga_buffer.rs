@@ -134,6 +134,8 @@ impl Writer {
 
 use core::fmt::{self, Arguments};
 
+use crate::interrupts;
+
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
@@ -194,50 +196,60 @@ macro_rules! error {
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        use core::fmt::Write;
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 #[doc(hidden)]
 pub fn _kernel(args: fmt::Arguments) {
     use core::fmt::Write;
-    let ref mut w = WRITER.lock();
-    w.change_color(KERNEL_COLOR);
-    w.write_str("[KERNEL] ").unwrap();
-    w.write_fmt(args).unwrap();
-    w.change_to_default_color();
-    w.new_line();
+    x86_64::instructions::interrupts::without_interrupts(||{
+        let ref mut w = WRITER.lock();
+        w.change_color(KERNEL_COLOR);
+        w.write_str("[KERNEL] ").unwrap();
+        w.write_fmt(args).unwrap();
+        w.change_to_default_color();
+        w.new_line();
+    });
 }
 
 #[doc(hidden)]
 pub fn _info(args: fmt::Arguments) {
     use core::fmt::Write;
-    let ref mut w = WRITER.lock();
-    w.change_color(INFO_COLOR);
-    w.write_str("[INFO] ").unwrap();
-    w.write_fmt(args).unwrap();
-    w.change_to_default_color();
-    w.new_line();
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let ref mut w = WRITER.lock();
+        w.change_color(INFO_COLOR);
+        w.write_str("[INFO] ").unwrap();
+        w.write_fmt(args).unwrap();
+        w.change_to_default_color();
+        w.new_line();
+    });
 }
 
 #[doc(hidden)]
 pub fn _warn(args: fmt::Arguments) {
     use core::fmt::Write;
-    let ref mut w = WRITER.lock();
-    w.change_color(WARN_COLOR);
-    w.write_str("[WARN] ").unwrap();
-    w.write_fmt(args).unwrap();
-    w.change_to_default_color();
-    w.new_line();
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let ref mut w = WRITER.lock();
+        w.change_color(WARN_COLOR);
+        w.write_str("[WARN] ").unwrap();
+        w.write_fmt(args).unwrap();
+        w.change_to_default_color();
+        w.new_line();
+    });
 }
 
 #[doc(hidden)]
 pub fn _error(args: fmt::Arguments) {
     use core::fmt::Write;
-    let ref mut w = WRITER.lock();
-    w.change_color(ERROR_COLOR);
-    w.write_str("[ERROR] ").unwrap();
-    w.write_fmt(args).unwrap();
-    w.change_to_default_color();
-    w.new_line();
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let ref mut w = WRITER.lock();
+        w.change_color(ERROR_COLOR);
+        w.write_str("[ERROR] ").unwrap();
+        w.write_fmt(args).unwrap();
+        w.change_to_default_color();
+        w.new_line();
+    });
 }
